@@ -1,70 +1,59 @@
 package tinygraph
 
-import (
-	"errors"
+import "errors"
 
-	"github.com/willf/bitset"
-)
-
-type MatrixType uint64
+// MatrixType is log 2 of the datum size
+type MatrixType uint8
 
 const (
-	Bit MatrixType = 1 << iota
-	HalfNybble
-	Nybble
+	Bit MatrixType = iota
+	TwoBit
+	FourBit
 	Byte
-	HalfWord
-	Word
+	SixteenBit
+	ThirtyTwoBit
 	Long
+)
+
+const (
+	WordSize    = uint8(64)
+	WordSizeExp = uint8(6)
 )
 
 var ErrOutOfBounds = errors.New("Bit requested is outside the matrix bounds")
 
 type Matrix interface {
-	initialize()
-	Set(x, y uint) error
-	Unset(x, y uint)
-	Get(x, y uint) uint64
+	Set(i, j uint) error
+	Get(i, j uint) uint8
+	Transpose() Matrix
 }
 
-func NewMatrix(size uint, cellsize MatrixType) (matrix Matrix) {
-	switch cellsize {
-	case Bit:
-		matrix = &BitMatrix{size: size}
-	}
-	matrix.initialize()
-	return
+type ArrayMatrix struct {
+	words []uint64
+	size  uint64
+	mtype MatrixType
 }
 
-type BitMatrix struct {
-	size uint
-	rows []*bitset.BitSet
-}
-
-func (m *BitMatrix) initialize() {
-	var (
-		i    uint
-		rows []*bitset.BitSet
-	)
-	rows = make([]*bitset.BitSet, m.size)
-	for i = 0; i < m.size; i++ {
-		rows[i] = bitset.New(m.size)
+func NewArrayMatrix(mtype MatrixType, size uint64) Matrix {
+	numwords := (size << mtype >> WordSizeExp) + 1
+	return &ArrayMatrix{
+		words: make([]uint64, numwords),
+		size:  size,
+		mtype: mtype,
 	}
 }
 
-func (m *BitMatrix) Set(x, y uint) (err error) {
-	if x > m.size || y > m.size {
-		err = ErrOutOfBounds
-	}
-	m.rows[x].Set(y)
-	return
+func (m *ArrayMatrix) Set(i, j uint) error {
+	return nil
 }
 
-func (m *BitMatrix) Unset(x, y uint) {
+var _ Matrix = &ArrayMatrix{}
 
-}
-
-func (m *BitMatrix) Get(x, y uint) uint64 {
-	result := m.rows[x].Get(y)
+func (m *ArrayMatrix) Get(i, j uint) uint8 {
+	var result uint8
 	return result
+}
+
+func (m *ArrayMatrix) Transpose() Matrix {
+	return &Transposed{m}
 }
