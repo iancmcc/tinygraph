@@ -34,8 +34,20 @@ var _ = Describe("Array Matrix", func() {
 			Ω(err).Should(Equal(ErrOutOfBounds))
 		})
 
+		It("should refuse to get a cell in an out-of-bounds column", func() {
+			_, err := m.Get(size-1, size)
+			Ω(err).Should(HaveOccurred())
+			Ω(err).Should(Equal(ErrOutOfBounds))
+		})
+
 		It("should refuse to set a cell in an out-of-bounds row", func() {
 			err := m.Set(size, size-1)
+			Ω(err).Should(HaveOccurred())
+			Ω(err).Should(Equal(ErrOutOfBounds))
+		})
+
+		It("should refuse to get a cell in an out-of-bounds row", func() {
+			_, err := m.Get(size, size-1)
 			Ω(err).Should(HaveOccurred())
 			Ω(err).Should(Equal(ErrOutOfBounds))
 		})
@@ -54,6 +66,17 @@ var _ = Describe("Array Matrix", func() {
 
 			m.Set(size-1, size-1)
 			Ω(m.Get(size-1, size-1)).Should(BeEquivalentTo(1))
+		})
+
+		It("should be able to be transposed", func() {
+			m.Set(0, 1)
+			Ω(m.Transpose().Get(1, 0)).Should(BeEquivalentTo(1))
+			Ω(m.Transpose().Get(0, 1)).Should(BeEquivalentTo(0))
+
+			m.Transpose().Set(0, 1)
+			Ω(m.Get(1, 0)).Should(BeEquivalentTo(1))
+
+			Ω(m.Transpose().Transpose()).Should(Equal(m))
 		})
 	}
 
@@ -108,13 +131,6 @@ var _ = Describe("Array Matrix", func() {
 		})
 
 	}
-
-	Context("with a 1x1 matrix", func() {
-		BeforeEach(func() {
-			size = 1
-		})
-		AssertForAllMatrixTypes()
-	})
 
 	Context("with a 2x2 matrix", func() {
 		BeforeEach(func() {

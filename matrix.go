@@ -76,7 +76,7 @@ func NewArrayMatrix(mtype MatrixType, size uint32) Matrix {
 
 // GetWordIndex returns the index of the word that contains the coordinate specified
 func (m *ArrayMatrix) GetWordIndex(i, j uint32) uint32 {
-	return (j * m.WordsPerRow) + (i >> 6)
+	return (j * m.WordsPerRow) + (i >> WordSizeExp)
 }
 
 // Set sets the principal bit of the cell at the coordinates requested
@@ -84,9 +84,7 @@ func (m *ArrayMatrix) Set(i, j uint32) error {
 	if i > m.LastIndex || j > m.LastIndex {
 		return ErrOutOfBounds
 	}
-	//idx := m.GetWordIndex(i)
-	offset := j*m.WordsPerRow + (i / 64)
-	m.Words[offset] |= 1 << (i & 0x1f)
+	m.Words[m.GetWordIndex(i, j)] |= 1 << (i & 0x1f)
 	return nil
 }
 
@@ -95,8 +93,7 @@ func (m *ArrayMatrix) Get(i, j uint32) (uint8, error) {
 	if i > m.LastIndex || j > m.LastIndex {
 		return 0, ErrOutOfBounds
 	}
-	offset := m.GetWordIndex(i, j)
-	return uint8((m.Words[offset] >> (i & 0x1f)) & 1), nil
+	return uint8((m.Words[m.GetWordIndex(i, j)] >> (i & 0x1f)) & 1), nil
 }
 
 // Transpose returns a view of the matrix with the axes transposed
