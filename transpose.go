@@ -11,7 +11,7 @@ func (t *Transposed) Set(i, j uint32) error {
 	return t.Matrix.Set(j, i)
 }
 
-func (t *Transposed) Get(i, j uint32) uint8 {
+func (t *Transposed) Get(i, j uint32) (uint8, error) {
 	return t.Matrix.Get(j, i)
 }
 
