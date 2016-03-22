@@ -84,7 +84,7 @@ func (m *ArrayMatrix) Set(i, j uint32) error {
 	if i > m.LastIndex || j > m.LastIndex {
 		return ErrOutOfBounds
 	}
-	m.Words[m.GetWordIndex(i, j)] |= 1 << (i & 0x1f)
+	m.Words[m.GetWordIndex(i, j)] |= 1 << (j & 0x1f)
 	return nil
 }
 
@@ -93,7 +93,7 @@ func (m *ArrayMatrix) Get(i, j uint32) (uint8, error) {
 	if i > m.LastIndex || j > m.LastIndex {
 		return 0, ErrOutOfBounds
 	}
-	return uint8((m.Words[m.GetWordIndex(i, j)] >> (i & 0x1f)) & 1), nil
+	return uint8((m.Words[m.GetWordIndex(i, j)] >> (j & 0x1f)) & 1), nil
 }
 
 // Transpose returns a view of the matrix with the axes transposed
