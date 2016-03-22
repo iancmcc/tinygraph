@@ -76,7 +76,7 @@ func NewArrayMatrix(mtype MatrixType, size uint32) Matrix {
 
 // GetWordIndex returns the index of the word that contains the coordinate specified
 func (m *ArrayMatrix) GetWordIndex(i, j uint32) uint32 {
-	return (j * m.WordsPerRow) + (i >> WordSizeExp)
+	return (i * m.WordsPerRow) + (j >> WordSizeExp)
 }
 
 // Set sets the principal bit of the cell at the coordinates requested
