@@ -63,8 +63,10 @@ var _ = Describe("Array Matrix", func() {
 		It("should return the correct word index", func() {
 			m.Set(0, 0)
 			Ω(m.Get(0, 0)).Should(BeEquivalentTo(1))
+			//[1 0 0 0]
 
 			m.Set(size-1, size-1)
+			//[1 0 2 0]
 			Ω(m.Get(size-1, size-1)).Should(BeEquivalentTo(1))
 		})
 
@@ -77,6 +79,12 @@ var _ = Describe("Array Matrix", func() {
 			Ω(m.Get(1, 0)).Should(BeEquivalentTo(1))
 
 			Ω(m.Transpose().Transpose()).Should(Equal(m))
+		})
+
+		It("should set extra bits", func() {
+			m.Set(0, 1)
+			m.SetBit(0, 1, 1)
+			Ω(m.Get(0, 1)).Should(BeEquivalentTo(3))
 		})
 	}
 
@@ -146,18 +154,20 @@ var _ = Describe("Array Matrix", func() {
 		AssertForAllMatrixTypes()
 	})
 
-	Context("with a 100x100 matrix", func() {
-		BeforeEach(func() {
-			size = 100
+	/*
+		Context("with a 100x100 matrix", func() {
+			BeforeEach(func() {
+				size = 100
+			})
+			AssertForAllMatrixTypes()
 		})
-		AssertForAllMatrixTypes()
-	})
 
-	Context("with a 1024x1024 matrix", func() {
-		BeforeEach(func() {
-			size = 1024
+		Context("with a 1024x1024 matrix", func() {
+			BeforeEach(func() {
+				size = 1024
+			})
+			AssertForAllMatrixTypes()
 		})
-		AssertForAllMatrixTypes()
-	})
+	*/
 
 })

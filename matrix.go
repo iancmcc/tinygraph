@@ -1,6 +1,9 @@
 package tinygraph
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // MatrixType is log 2 of the cell size
 type MatrixType uint8
@@ -39,7 +42,8 @@ var (
 // Matrix is a 2-dimensional square matrix.
 type Matrix interface {
 	Set(i, j uint32) error
-	Get(i, j uint32) (uint8, error)
+	SetBit(i, j, k uint32) error
+	Get(i, j uint32) (uint64, error)
 	Transpose() Matrix
 }
 
@@ -76,7 +80,7 @@ func NewArrayMatrix(mtype MatrixType, size uint32) Matrix {
 
 // GetWordIndex returns the index of the word that contains the coordinate specified
 func (m *ArrayMatrix) GetWordIndex(i, j uint32) uint32 {
-	return (i * m.WordsPerRow) + (j >> WordSizeExp)
+	return (i * m.WordsPerRow) + (j << m.MType >> WordSizeExp)
 }
 
 // Set sets the principal bit of the cell at the coordinates requested
@@ -84,16 +88,25 @@ func (m *ArrayMatrix) Set(i, j uint32) error {
 	if i > m.LastIndex || j > m.LastIndex {
 		return ErrOutOfBounds
 	}
-	m.Words[m.GetWordIndex(i, j)] |= 1 << (j & 0x1f)
+	m.Words[m.GetWordIndex(i, j)] |= 1 << (j & 0x3f)
 	return nil
 }
 
-// Get gets the principal bit of the cell at the coordinates requested
-func (m *ArrayMatrix) Get(i, j uint32) (uint8, error) {
+func (m *ArrayMatrix) SetBit(i, j, k uint32) error {
+	if i > m.LastIndex || j > m.LastIndex || k > 1<<m.MType {
+		return ErrOutOfBounds
+	}
+	m.Words[m.GetWordIndex(i, j)] |= (1 << k) << (j & 0x3f)
+	fmt.Println(m.Words)
+	return nil
+}
+
+// Get gets the cell at the coordinates requested
+func (m *ArrayMatrix) Get(i, j uint32) (uint64, error) {
 	if i > m.LastIndex || j > m.LastIndex {
 		return 0, ErrOutOfBounds
 	}
-	return uint8((m.Words[m.GetWordIndex(i, j)] >> (j & 0x1f)) & 1), nil
+	return uint64((m.Words[m.GetWordIndex(i, j)] >> (j & 0x3f)) & ((1 << (m.MType + 1)) - 1)), nil
 }
 
 // Transpose returns a view of the matrix with the axes transposed
