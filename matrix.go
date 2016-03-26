@@ -3,10 +3,11 @@ package tinygraph
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // MatrixType is log 2 of the cell size
-type MatrixType uint8
+type MatrixType uint64
 
 const (
 	// Bit is a single-bit cell
@@ -27,9 +28,13 @@ const (
 
 const (
 	// WordSize is the size of the word we will be using to store the matrix
-	WordSize = uint8(64)
+	WordSize = uint64(64)
+	// WordSize is the size of the word we will be using to store the matrix
+	WordSizeMinusOne = uint64(63)
 	// WordSizeExp is log 2 of the word size
-	WordSizeExp = uint8(6)
+	WordSizeExp = uint64(6)
+	// One is 1
+	One = uint64(1)
 )
 
 var (
@@ -41,9 +46,9 @@ var (
 
 // Matrix is a 2-dimensional square matrix.
 type Matrix interface {
-	Set(i, j uint32) error
-	SetBit(i, j, k uint32) error
-	Get(i, j uint32) (uint64, error)
+	Set(i, j uint64) error
+	SetBit(i, j, k uint64) error
+	Get(i, j uint64) (uint64, error)
 	Transpose() Matrix
 }
 
@@ -51,18 +56,22 @@ type Matrix interface {
 // a 1-dimensional array of uint64s
 type ArrayMatrix struct {
 	Words       []uint64
-	Size        uint32
-	LastIndex   uint32
-	WordsPerRow uint32
+	Size        uint64
+	LastIndex   uint64
+	WordsPerRow uint64
 	MType       MatrixType
+	cellmask    uint64
+	cellsize    uint64
 }
 
 // NewArrayMatrix creates a new matrix with a given cell size and given dimensions
-func NewArrayMatrix(mtype MatrixType, size uint32) Matrix {
+func NewArrayMatrix(mtype MatrixType, size uint64) Matrix {
 	matrix := &ArrayMatrix{
 		Size:      size,
 		LastIndex: size - 1,
 		MType:     mtype,
+		cellmask:  (1 << (1 << mtype)) - 1,
+		cellsize:  1 << mtype,
 	}
 	// calculate the number of words required to store a square matrix of size
 	// rows with size mtype cells per row.  Each row begins with a new uint64,
@@ -79,37 +88,44 @@ func NewArrayMatrix(mtype MatrixType, size uint32) Matrix {
 }
 
 // GetWordIndex returns the index of the word that contains the coordinate specified
-func (m *ArrayMatrix) GetWordIndex(i, j uint32) uint32 {
+func (m *ArrayMatrix) GetWordIndex(i, j uint64) uint64 {
 	return (i * m.WordsPerRow) + (j << m.MType >> WordSizeExp)
 }
 
 // Set sets the principal bit of the cell at the coordinates requested
-func (m *ArrayMatrix) Set(i, j uint32) error {
+func (m *ArrayMatrix) Set(i, j uint64) error {
 	if i > m.LastIndex || j > m.LastIndex {
 		return ErrOutOfBounds
 	}
-	m.Words[m.GetWordIndex(i, j)] |= 1 << (j & 0x3f)
+	mask := One << (j << m.MType & WordSizeMinusOne)
+	m.Words[m.GetWordIndex(i, j)] |= mask
 	return nil
 }
 
-func (m *ArrayMatrix) SetBit(i, j, k uint32) error {
-	if i > m.LastIndex || j > m.LastIndex || k > 1<<m.MType {
+func (m *ArrayMatrix) SetBit(i, j, k uint64) error {
+	if i > m.LastIndex || j > m.LastIndex || k >= m.cellsize {
 		return ErrOutOfBounds
 	}
-	m.Words[m.GetWordIndex(i, j)] |= (1 << k) << (j & 0x3f)
-	fmt.Println(m.Words)
+	mask := One << k << (j << m.MType & WordSizeMinusOne)
+	m.Words[m.GetWordIndex(i, j)] |= mask
 	return nil
 }
 
 // Get gets the cell at the coordinates requested
-func (m *ArrayMatrix) Get(i, j uint32) (uint64, error) {
+func (m *ArrayMatrix) Get(i, j uint64) (uint64, error) {
 	if i > m.LastIndex || j > m.LastIndex {
 		return 0, ErrOutOfBounds
 	}
-	return uint64((m.Words[m.GetWordIndex(i, j)] >> (j & 0x3f)) & ((1 << (m.MType + 1)) - 1)), nil
+	word := m.Words[m.GetWordIndex(i, j)]
+	result := word >> (j << m.MType & WordSizeMinusOne) & m.cellmask
+	return result, nil
 }
 
 // Transpose returns a view of the matrix with the axes transposed
 func (m *ArrayMatrix) Transpose() Matrix {
 	return &Transposed{m}
+}
+
+func logWord(s string, i uint64) {
+	fmt.Printf("%s: %s\n", s, strconv.FormatUint(i, 2))
 }

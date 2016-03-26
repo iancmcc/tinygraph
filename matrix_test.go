@@ -12,9 +12,9 @@ var _ = Describe("Array Matrix", func() {
 
 	var (
 		m           *ArrayMatrix
-		size        uint32
+		size        uint64
 		cellsize    MatrixType
-		wordsPerRow uint32
+		wordsPerRow uint64
 	)
 
 	AssertMatrixChecks := func() {
@@ -81,10 +81,25 @@ var _ = Describe("Array Matrix", func() {
 			Ω(m.Transpose().Transpose()).Should(Equal(m))
 		})
 
+		It("should set the primary bit", func() {
+			m.Set(0, 1)
+			Ω(m.Get(0, 1)).Should(BeEquivalentTo(1))
+		})
+
 		It("should set extra bits", func() {
 			m.Set(0, 1)
-			m.SetBit(0, 1, 1)
-			Ω(m.Get(0, 1)).Should(BeEquivalentTo(3))
+			Ω(m.Get(0, 1)).Should(BeEquivalentTo(1))
+			var i uint64
+			for i = 1; i < (1 << m.MType); i++ {
+				m.SetBit(0, 1, i)
+				var val uint64
+				if i == 63 {
+					val = ^uint64(0)
+				} else {
+					val = (1 << (i + 1)) - 1
+				}
+				Ω(m.Get(0, 1)).Should(BeEquivalentTo(val))
+			}
 		})
 	}
 
@@ -137,7 +152,6 @@ var _ = Describe("Array Matrix", func() {
 			})
 			AssertMatrixChecks()
 		})
-
 	}
 
 	Context("with a 2x2 matrix", func() {
@@ -154,20 +168,18 @@ var _ = Describe("Array Matrix", func() {
 		AssertForAllMatrixTypes()
 	})
 
-	/*
-		Context("with a 100x100 matrix", func() {
-			BeforeEach(func() {
-				size = 100
-			})
-			AssertForAllMatrixTypes()
+	Context("with a 100x100 matrix", func() {
+		BeforeEach(func() {
+			size = 100
 		})
+		AssertForAllMatrixTypes()
+	})
 
-		Context("with a 1024x1024 matrix", func() {
-			BeforeEach(func() {
-				size = 1024
-			})
-			AssertForAllMatrixTypes()
+	Context("with a 1024x1024 matrix", func() {
+		BeforeEach(func() {
+			size = 1024
 		})
-	*/
+		AssertForAllMatrixTypes()
+	})
 
 })
