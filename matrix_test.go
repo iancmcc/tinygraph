@@ -60,35 +60,53 @@ var _ = Describe("Array Matrix", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 		})
 
-		It("should return the correct word index", func() {
+		It("should set the principal bit correctly", func() {
 			m.Set(0, 0)
 			Ω(m.Get(0, 0)).Should(BeEquivalentTo(1))
-			//[1 0 0 0]
+			var i, j uint64
+			for i = 0; i < size; i += 4 {
+				for j = 0; j < size; j += 4 {
+					m.Set(i, j)
+					Ω(m.Get(i, j)).Should(BeEquivalentTo(1))
+				}
+			}
+		})
 
-			m.Set(size-1, size-1)
-			//[1 0 2 0]
-			Ω(m.Get(size-1, size-1)).Should(BeEquivalentTo(1))
+		It("should unset the principal bit correctly", func() {
+			m.Set(0, 0)
+			Ω(m.Get(0, 0)).Should(BeEquivalentTo(1))
+			var i, j uint64
+			for i = 0; i < size; i += 4 {
+				for j = 0; j < size; j += 4 {
+					m.Set(i, j)
+					m.Unset(i, j)
+					Ω(m.Get(i, j)).Should(BeEquivalentTo(0))
+				}
+			}
 		})
 
 		It("should be able to be transposed", func() {
-			m.Set(0, 1)
-			Ω(m.Transpose().Get(1, 0)).Should(BeEquivalentTo(1))
-			Ω(m.Transpose().Get(0, 1)).Should(BeEquivalentTo(0))
-
-			m.Transpose().Set(0, 1)
-			Ω(m.Get(1, 0)).Should(BeEquivalentTo(1))
-
-			Ω(m.Transpose().Transpose()).Should(Equal(m))
+			var i, j uint64
+			for i = 0; i < size; i += 5 {
+				for j = 0; j < size; j += 5 {
+					m.Set(i, j)
+					Ω(m.Transpose().Get(j, i)).Should(BeEquivalentTo(1))
+				}
+			}
 		})
 
-		It("should set the primary bit", func() {
-			m.Set(0, 1)
-			Ω(m.Get(0, 1)).Should(BeEquivalentTo(1))
+		It("should be able to set bits on a transposed matrix", func() {
+			var i, j uint64
+			for i = 0; i < size; i += 7 {
+				for j = 0; j < size; j += 7 {
+					m.Transpose().Set(i, j)
+					Ω(m.Get(j, i)).Should(BeEquivalentTo(1))
+				}
+			}
 		})
 
 		It("should set extra bits", func() {
 			m.Set(0, 1)
-			Ω(m.Get(0, 1)).Should(BeEquivalentTo(1))
 			var i uint64
 			for i = 1; i < (1 << m.MType); i++ {
 				m.SetBit(0, 1, i)
@@ -99,6 +117,31 @@ var _ = Describe("Array Matrix", func() {
 					val = (1 << (i + 1)) - 1
 				}
 				Ω(m.Get(0, 1)).Should(BeEquivalentTo(val))
+			}
+		})
+
+		It("should unset extra bits", func() {
+			m.Set(0, 1)
+			var i uint64
+			for i = 1; i < (1 << m.MType); i++ {
+				m.SetBit(0, 1, i)
+				var val uint64
+				if i == 63 {
+					val = ^uint64(0)
+				} else {
+					val = (1 << (i + 1)) - 1
+				}
+				Ω(m.Get(0, 1)).Should(BeEquivalentTo(val))
+			}
+			for i = (1 << m.MType) - 1; i > 0; i-- {
+				m.UnsetBit(0, 1, i)
+				var val uint64
+				if i == 63 {
+					val = ^uint64(0)
+				} else {
+					val = (1 << (i + 1)) - 1
+				}
+				Ω(m.Get(0, 1)).Should(BeEquivalentTo(val >> 1))
 			}
 		})
 	}

@@ -29,7 +29,7 @@ const (
 const (
 	// WordSize is the size of the word we will be using to store the matrix
 	WordSize = uint64(64)
-	// WordSize is the size of the word we will be using to store the matrix
+	// WordSizeMinusOne is word size minus one, for bitwise modulus
 	WordSizeMinusOne = uint64(63)
 	// WordSizeExp is log 2 of the word size
 	WordSizeExp = uint64(6)
@@ -47,9 +47,15 @@ var (
 // Matrix is a 2-dimensional square matrix.
 type Matrix interface {
 	Set(i, j uint64) error
+	Unset(i, j uint64) error
 	SetBit(i, j, k uint64) error
+	UnsetBit(i, j, k uint64) error
 	Get(i, j uint64) (uint64, error)
 	Transpose() Matrix
+}
+
+func New(mtype MatrixType, size uint64) Matrix {
+	return NewArrayMatrix(mtype, size)
 }
 
 // ArrayMatrix is an implementation of Matrix that stores cells as
@@ -72,6 +78,9 @@ func NewArrayMatrix(mtype MatrixType, size uint64) Matrix {
 		MType:     mtype,
 		cellmask:  (1 << (1 << mtype)) - 1,
 		cellsize:  1 << mtype,
+	}
+	if mtype == Long {
+		matrix.cellmask = ^uint64(0)
 	}
 	// calculate the number of words required to store a square matrix of size
 	// rows with size mtype cells per row.  Each row begins with a new uint64,
@@ -102,12 +111,32 @@ func (m *ArrayMatrix) Set(i, j uint64) error {
 	return nil
 }
 
+func (m *ArrayMatrix) Unset(i, j uint64) error {
+	if i > m.LastIndex || j > m.LastIndex {
+		return ErrOutOfBounds
+	}
+	mask := One << (j << m.MType & WordSizeMinusOne)
+	m.Words[m.GetWordIndex(i, j)] &= ^mask
+	return nil
+}
+
 func (m *ArrayMatrix) SetBit(i, j, k uint64) error {
 	if i > m.LastIndex || j > m.LastIndex || k >= m.cellsize {
 		return ErrOutOfBounds
 	}
 	mask := One << k << (j << m.MType & WordSizeMinusOne)
 	m.Words[m.GetWordIndex(i, j)] |= mask
+	return nil
+}
+
+func (m *ArrayMatrix) UnsetBit(i, j, k uint64) error {
+	if i > m.LastIndex || j > m.LastIndex || k >= m.cellsize {
+		return ErrOutOfBounds
+	}
+	offset := (j << m.MType & WordSizeMinusOne)
+	mask := One << k << offset
+	cell := (m.cellmask << offset) & ^mask
+	m.Words[m.GetWordIndex(i, j)] &= cell
 	return nil
 }
 
