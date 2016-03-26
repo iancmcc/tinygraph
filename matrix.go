@@ -50,7 +50,10 @@ type Matrix interface {
 	Unset(i, j uint64) error
 	SetBit(i, j, k uint64) error
 	UnsetBit(i, j, k uint64) error
+	Replace(i, j, k uint64) error
+	Clear(i, j uint64) error
 	Get(i, j uint64) (uint64, error)
+	Copy() Matrix
 	Transpose() Matrix
 }
 
@@ -129,6 +132,22 @@ func (m *ArrayMatrix) SetBit(i, j, k uint64) error {
 	return nil
 }
 
+func (m *ArrayMatrix) Replace(i, j, k uint64) error {
+	if i > m.LastIndex || j > m.LastIndex {
+		return ErrOutOfBounds
+	}
+	offset := (j << m.MType & WordSizeMinusOne)
+	newcell := k << offset
+	mask := m.cellmask << offset
+	word := m.Words[m.GetWordIndex(i, j)]
+	m.Words[m.GetWordIndex(i, j)] ^= (word ^ newcell) & mask
+	return nil
+}
+
+func (m *ArrayMatrix) Clear(i, j uint64) error {
+	return m.Replace(i, j, 0)
+}
+
 func (m *ArrayMatrix) UnsetBit(i, j, k uint64) error {
 	if i > m.LastIndex || j > m.LastIndex || k >= m.cellsize {
 		return ErrOutOfBounds
@@ -150,9 +169,32 @@ func (m *ArrayMatrix) Get(i, j uint64) (uint64, error) {
 	return result, nil
 }
 
+func (m *ArrayMatrix) GetRow(i uint64) ([]uint64, error) {
+	if i > m.LastIndex {
+		return nil, ErrOutOfBounds
+	}
+	row := make([]uint64, m.WordsPerRow)
+	idx := i * m.WordsPerRow
+	copy(row, m.Words[idx:idx+m.WordsPerRow])
+	return row, nil
+}
+
 // Transpose returns a view of the matrix with the axes transposed
 func (m *ArrayMatrix) Transpose() Matrix {
-	return &Transposed{m}
+	return &TransposedArrayMatrix{m}
+}
+
+func (m *ArrayMatrix) Copy() Matrix {
+	n := &ArrayMatrix{
+		Size:      m.Size,
+		LastIndex: m.LastIndex,
+		MType:     m.MType,
+		cellmask:  m.cellmask,
+		cellsize:  m.cellsize,
+	}
+	n.Words = make([]uint64, len(m.Words))
+	copy(n.Words, m.Words)
+	return n
 }
 
 func logWord(s string, i uint64) {

@@ -144,6 +144,50 @@ var _ = Describe("Array Matrix", func() {
 				Ω(m.Get(0, 1)).Should(BeEquivalentTo(val >> 1))
 			}
 		})
+
+		It("should create a copy", func() {
+			m.Set(0, 1)
+			n := m.Copy()
+			Ω(n.Get(0, 1)).Should(BeEquivalentTo(1))
+			m.Unset(0, 1)
+			Ω(m.Get(0, 1)).Should(BeEquivalentTo(0))
+			Ω(n.Get(0, 1)).Should(BeEquivalentTo(1))
+		})
+
+		It("should be able to replace a cell", func() {
+			m.Replace(0, 1, 1)
+			Ω(m.Get(0, 1)).Should(BeEquivalentTo(1))
+
+			if size >= 4 && cellsize >= Byte {
+				m.Replace(1, 2, 10)
+				Ω(m.Get(1, 2)).Should(BeEquivalentTo(10))
+			}
+		})
+
+		It("should be able to clear a cell", func() {
+			m.Set(0, 1)
+			m.Clear(0, 1)
+			Ω(m.Get(0, 1)).Should(BeEquivalentTo(0))
+			if size >= 4 && cellsize >= Byte {
+				m.Set(2, 3)
+				m.SetBit(2, 3, 2)
+				m.SetBit(2, 3, 5)
+				m.Clear(2, 3)
+				Ω(m.Get(2, 3)).Should(BeEquivalentTo(0))
+			}
+		})
+
+		It("should be able to get a row", func() {
+			m.Set(0, 1)
+			m.Set(1, 0)
+			r, _ := m.GetRow(0)
+			Ω(len(r)).Should(BeEquivalentTo(m.WordsPerRow))
+			Ω(r[0]).Should(BeEquivalentTo(1 << (1 << m.MType)))
+
+			r2, _ := m.GetRow(1)
+			Ω(len(r2)).Should(BeEquivalentTo(m.WordsPerRow))
+			Ω(r2[0]).Should(BeEquivalentTo(1))
+		})
 	}
 
 	AssertForAllMatrixTypes := func() {
