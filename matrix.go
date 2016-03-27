@@ -3,7 +3,6 @@ package tinygraph
 import (
 	"errors"
 	"fmt"
-	"strconv"
 )
 
 // MatrixType is log 2 of the cell size
@@ -53,6 +52,8 @@ type Matrix interface {
 	Replace(i, j, k uint64) error
 	Clear(i, j uint64) error
 	Get(i, j uint64) (uint64, error)
+	GetRow(i uint64) ([]uint64, error)
+	SetRow(i uint64, row []uint64) error
 	Copy() Matrix
 	Transpose() Matrix
 }
@@ -179,6 +180,51 @@ func (m *ArrayMatrix) GetRow(i uint64) ([]uint64, error) {
 	return row, nil
 }
 
+func (m *ArrayMatrix) SetRow(i uint64, row []uint64) error {
+	if i > m.LastIndex || uint64(len(row)) != m.WordsPerRow {
+		return ErrOutOfBounds
+	}
+	idx := i * m.WordsPerRow
+	copy(m.Words[idx:idx+m.WordsPerRow], row)
+	return nil
+}
+
+func (m *ArrayMatrix) ReverseRow(i uint64) error {
+	if i > m.LastIndex {
+		return ErrOutOfBounds
+	}
+	row, _ := m.GetRow(i)
+	n := make([]uint64, len(row))
+	for i, v := range row {
+		mask := ^uint64(0)
+		s := WordSize >> 1
+		for s >= m.cellsize {
+			mask ^= (mask << s)
+			v = ((v >> s) & mask) | ((v << s) & ^mask)
+			s >>= 1
+		}
+		n[m.WordsPerRow-1-uint64(i)] = v
+	}
+	offset := m.Size << m.MType & WordSizeMinusOne
+	if offset > 0 {
+		// Need to shift all the bits, since not evenly divisible by 64
+		var j uint64
+		mask := uint64(1)
+		for t := uint64(0); t < offset; t++ {
+			mask = (mask << 1) | 1
+		}
+		current := n[0] >> (WordSize - offset) & mask
+		for j = 1; j < m.WordsPerRow; j++ {
+			next := n[j]
+			current |= next << offset
+			n[j-1] = current
+			current = next >> (WordSize - offset) & mask
+		}
+		n[m.WordsPerRow-1] = current
+	}
+	return m.SetRow(i, n)
+}
+
 // Transpose returns a view of the matrix with the axes transposed
 func (m *ArrayMatrix) Transpose() Matrix {
 	return &TransposedArrayMatrix{m}
@@ -197,6 +243,32 @@ func (m *ArrayMatrix) Copy() Matrix {
 	return n
 }
 
-func logWord(s string, i uint64) {
-	fmt.Printf("%s: %s\n", s, strconv.FormatUint(i, 2))
+func logWord(s string, m MatrixType, i uint64) {
+	fmt.Println(s)
+	fmt.Printf(" %s", spaceformat(i, 1<<m))
+	fmt.Printf("\n")
+}
+
+func logRow(s string, m MatrixType, r []uint64) {
+	fmt.Println(s)
+	for _, i := range r {
+		fmt.Printf(" %s", spaceformat(i, 1<<m))
+	}
+	fmt.Printf("\n")
+}
+
+func spaceformat(n, m uint64) string {
+	in := fmt.Sprintf("%064b", n)
+	out := make([]byte, len(in)+(len(in)-2+int(in[0]/'0'))/4)
+	var i, j, k uint64
+	for i, j, k = uint64(len(in)-1), uint64(len(out)-1), 0; ; i, j = i-1, j-1 {
+		out[j] = in[i]
+		if i == 0 {
+			return string(out)
+		}
+		if k++; k == m {
+			j, k = j-1, 0
+			out[j] = ' '
+		}
+	}
 }

@@ -31,6 +31,16 @@ func (t *TransposedArrayMatrix) Replace(i, j, k uint64) error {
 	return t.Matrix.Replace(j, i, k)
 }
 
+func (t *TransposedArrayMatrix) GetRow(i uint64) ([]uint64, error) {
+	// TODO: Implement
+	return []uint64{}, nil
+}
+
+func (t *TransposedArrayMatrix) SetRow(i uint64, row []uint64) error {
+	// TODO: Implement
+	return nil
+}
+
 func (t *TransposedArrayMatrix) Clear(i, j uint64) error {
 	return t.Matrix.Clear(j, i)
 }
@@ -40,6 +50,7 @@ func (t *TransposedArrayMatrix) Transpose() Matrix {
 }
 
 func (t *TransposedArrayMatrix) Copy() Matrix {
+	// TODO: Implement
 	n := t.Matrix.Copy().(*ArrayMatrix)
 	return n.Transpose()
 }

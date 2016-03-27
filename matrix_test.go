@@ -248,11 +248,33 @@ var _ = Describe("Array Matrix", func() {
 		AssertForAllMatrixTypes()
 	})
 
-	Context("with an 8x8 matrix", func() {
+	Context("with a 50x50 matrix", func() {
 		BeforeEach(func() {
-			size = 8
+			size = 50
 		})
 		AssertForAllMatrixTypes()
+
+		Context("with an eight-bit cell size", func() {
+			BeforeEach(func() {
+				cellsize = Byte
+				m = NewArrayMatrix(cellsize, size).(*ArrayMatrix)
+			})
+			It("should be able to reverse a row", func() {
+				m.SetBit(5, 0, 0)
+				m.SetBit(5, 2, 1)
+				m.SetBit(5, 4, 2)
+				m.SetBit(5, 6, 3)
+				m.SetBit(5, 9, 0)
+				m.SetBit(5, 9, 1)
+				m.SetBit(5, 9, 3)
+				m.ReverseRow(5)
+				Ω(m.Get(5, size-1)).Should(BeEquivalentTo(1 << 0))
+				Ω(m.Get(5, size-3)).Should(BeEquivalentTo(1 << 1))
+				Ω(m.Get(5, size-5)).Should(BeEquivalentTo(1 << 2))
+				Ω(m.Get(5, size-7)).Should(BeEquivalentTo(1 << 3))
+				Ω(m.Get(5, size-10)).Should(BeEquivalentTo(1 | 1<<1 | 1<<3))
+			})
+		})
 	})
 
 	Context("with a 100x100 matrix", func() {
@@ -260,6 +282,20 @@ var _ = Describe("Array Matrix", func() {
 			size = 100
 		})
 		AssertForAllMatrixTypes()
+
+		Context("with a four-bit cell size", func() {
+			BeforeEach(func() {
+				cellsize = FourBit
+				m = NewArrayMatrix(cellsize, size).(*ArrayMatrix)
+			})
+			It("should be able to set a row", func() {
+				newrow := []uint64{4294967312, 14987979559889010688, 0, 0, 0, 0, 0}
+				m.SetRow(31, newrow)
+				Ω(m.Get(31, 1)).Should(BeEquivalentTo(1))
+				Ω(m.Get(31, 8)).Should(BeEquivalentTo(1))
+				Ω(m.Get(31, 31)).Should(BeEquivalentTo(13))
+			})
+		})
 	})
 
 	Context("with a 1024x1024 matrix", func() {
