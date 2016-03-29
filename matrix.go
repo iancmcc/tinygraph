@@ -232,11 +232,12 @@ func (m *ArrayMatrix) Transpose() Matrix {
 
 func (m *ArrayMatrix) Copy() Matrix {
 	n := &ArrayMatrix{
-		Size:      m.Size,
-		LastIndex: m.LastIndex,
-		MType:     m.MType,
-		cellmask:  m.cellmask,
-		cellsize:  m.cellsize,
+		Size:        m.Size,
+		LastIndex:   m.LastIndex,
+		MType:       m.MType,
+		WordsPerRow: m.WordsPerRow,
+		cellmask:    m.cellmask,
+		cellsize:    m.cellsize,
 	}
 	n.Words = make([]uint64, len(m.Words))
 	copy(n.Words, m.Words)

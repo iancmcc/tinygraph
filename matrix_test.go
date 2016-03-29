@@ -246,6 +246,21 @@ var _ = Describe("Array Matrix", func() {
 			size = 2
 		})
 		AssertForAllMatrixTypes()
+
+		Context("with an eight-bit cell size", func() {
+			BeforeEach(func() {
+				cellsize = Byte
+				m = NewArrayMatrix(cellsize, size).(*ArrayMatrix)
+			})
+			It("should transpose", func() {
+				m.Set(0, 0)
+				m.Set(1, 0)
+				n := m.Transpose().Copy()
+				Ω(n.Get(0, 0)).Should(BeEquivalentTo(1))
+				Ω(n.Get(0, 1)).Should(BeEquivalentTo(1))
+				Ω(n.Get(1, 0)).Should(BeEquivalentTo(0))
+			})
+		})
 	})
 
 	Context("with a 50x50 matrix", func() {
