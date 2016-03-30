@@ -189,6 +189,20 @@ func (m *ArrayMatrix) SetRow(i uint64, row []uint64) error {
 	return nil
 }
 
+func (m *ArrayMatrix) Swap(i0, j0, i1, j1 uint64) error {
+	if i0 > m.LastIndex || j0 > m.LastIndex || i1 > m.LastIndex || j1 > m.LastIndex {
+		return ErrOutOfBounds
+	}
+	idx0 := m.GetWordIndex(i0, j0)
+	idx1 := m.GetWordIndex(i1, j1)
+	pos0 := j0 << m.MType & WordSizeMinusOne
+	pos1 := j1 << m.MType & WordSizeMinusOne
+	mask := ((m.Words[idx0] >> pos0) ^ (m.Words[idx1] >> pos1)) & m.cellmask
+	m.Words[idx0] ^= (mask << pos0)
+	m.Words[idx1] ^= (mask << pos1)
+	return nil
+}
+
 func (m *ArrayMatrix) ReverseRow(i uint64) error {
 	if i > m.LastIndex {
 		return ErrOutOfBounds

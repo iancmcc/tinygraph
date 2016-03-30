@@ -57,12 +57,7 @@ func (t *TransposedArrayMatrix) Copy() Matrix {
 			if i == j {
 				continue
 			}
-			cell1, _ := n.Get(i, j)
-			cell2, _ := n.Get(j, i)
-			if cell1 != cell2 {
-				n.Replace(i, j, cell2)
-				n.Replace(j, i, cell1)
-			}
+			n.Swap(i, j, j, i)
 		}
 	}
 	return n
