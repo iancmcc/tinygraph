@@ -50,18 +50,19 @@ func (t *TransposedArrayMatrix) Transpose() Matrix {
 }
 
 func (t *TransposedArrayMatrix) Copy() Matrix {
-	// TODO: Implement
 	n := t.Matrix.Copy().(*ArrayMatrix)
 	var i, j uint64
 	for i = 0; i < n.Size; i++ {
-		for j = 0; j < n.Size; j++ {
+		for j = 0; j <= i; j++ {
 			if i == j {
 				continue
 			}
 			cell1, _ := n.Get(i, j)
 			cell2, _ := n.Get(j, i)
-			n.Replace(i, j, cell2)
-			n.Replace(j, i, cell1)
+			if cell1 != cell2 {
+				n.Replace(i, j, cell2)
+				n.Replace(j, i, cell1)
+			}
 		}
 	}
 	return n
